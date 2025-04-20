@@ -1,54 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SplashScreen extends StatefulWidget {
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _dobController = TextEditingController();
-  final _firestore = FirebaseFirestore.instance;
-  final _auth = FirebaseAuth.instance;
-
-  void _logout() async {
-    await _auth.signOut();
-    Navigator.pushReplacementNamed(context, '/login');
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _navigateToNextScreen();
   }
 
-  void _updateDOB() async {
-    await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-      'dob': _dobController.text,
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('DOB updated')),
-    );
+  _navigateToNextScreen() async {
+    await Future.delayed(Duration(seconds: 3), () {});
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Settings')),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
+      backgroundColor: Colors.blue,
+      body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _dobController,
-              decoration: InputDecoration(labelText: 'Date of Birth (YYYY-MM-DD)'),
-            ),
+            Icon(Icons.chat_bubble, size: 100, color: Colors.white),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _updateDOB,
-              child: Text('Update DOB'),
+            Text(
+              'Chatboards',
+              style: TextStyle(
+                fontSize: 30,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _logout,
-              child: Text('Logout'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            ),
+            SizedBox(height: 10),
+            CircularProgressIndicator(color: Colors.white),
           ],
         ),
       ),

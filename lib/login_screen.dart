@@ -51,17 +51,17 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       UserCredential userCredential;
       if (_isLogin) {
-        // Login with email and password
         userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        // Verify user data after login
+
         DocumentSnapshot userDoc =
             await FirebaseFirestore.instance
                 .collection('users')
                 .doc(userCredential.user!.uid)
                 .get();
+
         if (userDoc.exists) {
           Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
           UserDetails user = UserDetails.fromMap(data);
@@ -69,9 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
             'User data after login: ${user.firstName} ${user.lastName}, Role: ${user.role}',
           );
         } else {
-          print(
-            'User document does not exist for UID: ${userCredential.user!.uid}',
-          );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('User data not found. Please register first.'),
@@ -80,76 +77,132 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
       } else {
-        // Register new user
         userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
               email: _emailController.text.trim(),
               password: _passwordController.text.trim(),
             );
-        // Create UserDetails object
+
         UserDetails userDetails = UserDetails(
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
           role: 'user',
           registrationDate: DateTime.now(),
         );
-        // Save user data as a single document
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
             .set(userDetails.toMap());
+
         print(
-          'User data saved: ${userDetails.firstName} ${userDetails.lastName}',
+          'User registered: ${userDetails.firstName} ${userDetails.lastName}',
         );
       }
 
-      // Navigate to home screen
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      print('Auth error: $e');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
+  Widget _buildTextField(
+    TextEditingController controller,
+    String labelText, {
+    bool obscureText = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        decoration: InputDecoration(
+          labelText: labelText,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.9),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isLogin ? 'Login' : 'Register')),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            if (!_isLogin) ...[
-              TextField(
-                controller: _firstNameController,
-                decoration: InputDecoration(labelText: 'First Name'),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Card(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              TextField(
-                controller: _lastNameController,
-                decoration: InputDecoration(labelText: 'Last Name'),
+              elevation: 12,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _isLogin ? 'Login' : 'Register',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    if (!_isLogin) ...[
+                      _buildTextField(_firstNameController, 'First Name'),
+                      _buildTextField(_lastNameController, 'Last Name'),
+                    ],
+                    _buildTextField(_emailController, 'Email'),
+                    _buildTextField(
+                      _passwordController,
+                      'Password',
+                      obscureText: true,
+                    ),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _authUser,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        backgroundColor: Colors.deepPurple,
+                      ),
+                      child: Text(
+                        _isLogin ? 'Login' : 'Register',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _isLogin = !_isLogin),
+                      child: Text(
+                        _isLogin
+                            ? 'New user? Register here'
+                            : 'Already registered? Login',
+                        style: TextStyle(color: Colors.blueGrey),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
             ),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _authUser,
-              child: Text(_isLogin ? 'Login' : 'Register'),
-            ),
-            TextButton(
-              onPressed: () => setState(() => _isLogin = !_isLogin),
-              child: Text(_isLogin ? 'Register instead' : 'Login instead'),
-            ),
-          ],
+          ),
         ),
       ),
     );
